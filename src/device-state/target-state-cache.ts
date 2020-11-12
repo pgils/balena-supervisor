@@ -14,6 +14,8 @@ export interface DatabaseApp {
 	networks: string;
 	volumes: string;
 	source: string;
+	uuid: string;
+	type: string;
 }
 export type DatabaseApps = DatabaseApp[];
 
