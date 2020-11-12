@@ -41,6 +41,8 @@ import { checkTruthy, checkInt } from '../lib/validation';
 import { Proxyvisor } from '../proxyvisor';
 import * as updateLock from '../lib/update-lock';
 import { EventEmitter } from 'events';
+import Network from './network';
+import Volume from './volume';
 
 type ApplicationManagerEventEmitter = StrictEventEmitter<
 	EventEmitter,
@@ -190,6 +192,7 @@ export async function getRequiredSteps(
 	if (localMode) {
 		ignoreImages = localMode;
 	}
+	targetApps = _.pickBy(targetApps, { type: 'supervised' });
 
 	const currentAppIds = Object.keys(currentApps).map((i) => parseInt(i, 10));
 	const targetAppIds = Object.keys(targetApps).map((i) => parseInt(i, 10));
@@ -262,6 +265,7 @@ export async function getRequiredSteps(
 				const emptyCurrent = new App(
 					{
 						appId,
+						type: 'supervised',
 						services: [],
 						volumes: {},
 						networks: {},
@@ -357,33 +361,145 @@ export async function getCurrentAppsForReport(): Promise<
 	return appsToReport;
 }
 
+// The following two function may look pretty odd, but after the move to uuids,
+// there's a chance that the current running apps don't have a uuid set. We
+// still need to be able to work on these and perform various state changes. To
+// do this we try to use the UUID to group the components, and if that isn't
+// available we revert to using the appIds instead
 export async function getCurrentApps(): Promise<InstancedAppState> {
-	const volumes = _.groupBy(await volumeManager.getAll(), 'appId');
-	const networks = _.groupBy(await networkManager.getAll(), 'appId');
-	const services = _.groupBy(await serviceManager.getAll(), 'appId');
-
-	const allAppIds = _.union(
-		Object.keys(volumes),
-		Object.keys(networks),
-		Object.keys(services),
-	).map((i) => parseInt(i, 10));
+	const componentGroups = groupComponents(
+		await serviceManager.getAll(),
+		await networkManager.getAll(),
+		await volumeManager.getAll(),
+	);
 
 	const apps: InstancedAppState = {};
-	for (const appId of allAppIds) {
+	for (const strAppId of Object.keys(componentGroups)) {
+		const appId = parseInt(strAppId, 10);
 		const commit = await commitStore.getCommitForApp(appId);
-		apps[appId] = new App(
-			{
-				appId,
-				services: services[appId] ?? [],
-				networks: _.keyBy(networks[appId], 'name'),
-				volumes: _.keyBy(volumes[appId], 'name'),
-				commit,
-			},
-			false,
-		);
+
+		const components = componentGroups[appId];
+
+		// fetch the correct uuid from any component within the appId
+		const uuid = [
+			components.services[0]?.uuid,
+			components.volumes[0]?.uuid,
+			components.networks[0]?.uuid,
+		]
+			.filter((u) => u != null)
+			.shift()!;
+
+		// If we don't have any components for this app, ignore it (this can
+		// actually happen when moving between backends but maintaining UUIDs)
+		if (
+			!_.isEmpty(components.services) ||
+			!_.isEmpty(components.volumes) ||
+			!_.isEmpty(components.networks)
+		) {
+			apps[appId] = new App(
+				{
+					appId,
+					type: 'supervised',
+					uuid,
+					commit,
+					services: componentGroups[appId].services,
+					networks: _.keyBy(componentGroups[appId].networks, 'name'),
+					volumes: _.keyBy(componentGroups[appId].volumes, 'name'),
+				},
+				false,
+			);
+		}
 	}
 
 	return apps;
+}
+
+interface AppGroup {
+	[appId: number]: {
+		services: Service[];
+		volumes: Volume[];
+		networks: Network[];
+	};
+}
+
+function groupComponents(
+	services: Service[],
+	networks: Network[],
+	volumes: Volume[],
+): AppGroup {
+	const grouping: AppGroup = {};
+
+	const everyComponent: [{ uuid?: string; appId: number }] = [
+		...services,
+		...networks,
+		...volumes,
+	] as any;
+
+	const allUuids: string[] = [];
+	const allAppIds: number[] = [];
+	everyComponent.forEach(({ appId, uuid }) => {
+		// Pre-populate the groupings
+		grouping[appId] = {
+			services: [],
+			networks: [],
+			volumes: [],
+		};
+		// Save all the uuids for later
+		if (uuid != null) {
+			allUuids.push(uuid);
+		}
+		allAppIds.push(appId);
+	});
+
+	// First we try to group everything by it's uuid, but if any component does
+	// not have a uuid, we fall back to the old appId style
+	if (everyComponent.length === allUuids.length) {
+		const uuidGroups: { [uuid: string]: AppGroup[0] } = {};
+		_.uniq(allUuids).forEach((uuid) => {
+			const uuidServices = services.filter(({ uuid: sUuid }) => uuid === sUuid);
+			const uuidVolumes = volumes.filter(({ uuid: vUuid }) => uuid === vUuid);
+			const uuidNetworks = networks.filter(({ uuid: vUuid }) => uuid === vUuid);
+
+			uuidGroups[uuid] = {
+				services: uuidServices,
+				networks: uuidNetworks,
+				volumes: uuidVolumes,
+			};
+		});
+
+		for (const uuid of Object.keys(uuidGroups)) {
+			// There's a chance that the uuid and the appId is different, and this
+			// is fine. Unfortunately we have no way of knowing which is the "real"
+			// appId (that is the app id which relates to the currently joined
+			// backend) so we instead just choose the first and add everything to that
+			const appId =
+				uuidGroups[uuid].services[0]?.appId ||
+				uuidGroups[uuid].networks[0]?.appId ||
+				uuidGroups[uuid].volumes[0]?.appId;
+			grouping[appId] = uuidGroups[uuid];
+		}
+	} else {
+		// Otherwise group them by appId and let the state engine match them later.
+		// This will only happen once, as every target state going forward will
+		// contain UUIDs, we just need to handle the initial upgrade
+		const appSvcs = _.groupBy(services, 'appId');
+		const appVols = _.groupBy(volumes, 'appId');
+		const appNets = _.groupBy(networks, 'appId');
+
+		allAppIds.forEach((appId) => {
+			grouping[appId].services = grouping[appId].services.concat(
+				appSvcs[appId] || [],
+			);
+			grouping[appId].networks = grouping[appId].networks.concat(
+				appNets[appId] || [],
+			);
+			grouping[appId].volumes = grouping[appId].volumes.concat(
+				appVols[appId] || [],
+			);
+		});
+	}
+
+	return grouping;
 }
 
 function killServicesUsingApi(current: InstancedAppState): CompositionStep[] {
@@ -453,7 +569,11 @@ export async function setTarget(
 				// Currently this will only happen if the release
 				// which would replace it fails a contract
 				// validation check
-				_.map(apps, (_v, appId) => checkInt(appId)),
+				_.map(apps, (a) => checkInt(a.appId)),
+			)
+			.whereNotIn(
+				'uuid',
+				_.map(apps, (_a, uuid) => uuid),
 			)
 			.del();
 		await proxyvisor.setTargetInTransaction(dependent, trx);

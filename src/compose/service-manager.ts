@@ -64,7 +64,8 @@ export const getAll = async (
 
 	const services = await Bluebird.map(containers, async (container) => {
 		try {
-			const serviceInspect = await docker.getContainer(container.Id).inspect();
+			const serviceInspect = await // FIXME: The await shouldn't be needed here
+			(await docker.getContainer(container.Id)).inspect();
 			const service = Service.fromDockerContainer(serviceInspect);
 			// We know that the containerId is set below, because `fromDockerContainer`
 			// always sets it
