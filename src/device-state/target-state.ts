@@ -135,6 +135,7 @@ export const update = async (
 			headers: {
 				Authorization: `Bearer ${deviceApiKey}`,
 				'If-None-Match': cache?.etag,
+				'x-balena-state-format': 'v2+extraContainers',
 			},
 		};
 

@@ -113,8 +113,9 @@ describe('validation', () => {
 	describe('isValidAppsObject', () => {
 		it('returns true for a valid object', () => {
 			const apps = {
-				'1234': {
+				uuid: {
 					name: 'something',
+					appId: 1234,
 					releaseId: 123,
 					commit: 'bar',
 					services: {
@@ -135,6 +136,7 @@ describe('validation', () => {
 			const apps = {
 				'1234': {
 					name: 'something',
+					appId: 1234,
 					releaseId: 123,
 					commit: 'bar',
 					services: {
@@ -153,8 +155,9 @@ describe('validation', () => {
 
 		it('returns false with an invalid appId', () => {
 			const apps = {
-				boo: {
+				uuid: {
 					name: 'something',
+					appId: 'test',
 					releaseId: 123,
 					commit: 'bar',
 					services: {
@@ -175,6 +178,7 @@ describe('validation', () => {
 			const apps = {
 				'1234': {
 					name: 'something',
+					appId: 1234,
 					services: {
 						'45': {
 							serviceName: 'bazbaz',
