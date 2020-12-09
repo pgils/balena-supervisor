@@ -9,6 +9,7 @@ import Network from './network';
 import Service from './service';
 import * as serviceManager from './service-manager';
 import Volume from './volume';
+import * as hostExt from './host-extension';
 
 import { checkTruthy } from '../lib/validation';
 import * as networkManager from './network-manager';
@@ -98,6 +99,12 @@ interface CompositionStepArgs {
 	};
 	ensureSupervisorNetwork: {};
 	noop: {};
+	installHostExtension: {
+		image: Image;
+	};
+	removeHostExtension: {
+		image: Image;
+	};
 }
 
 export type CompositionStepAction = keyof CompositionStepArgs;
@@ -295,6 +302,14 @@ export function getExecutors(app: {
 		},
 		noop: async () => {
 			/* async noop */
+		},
+
+		// Host extension specific steps
+		installHostExtension: async (step) => {
+			hostExt.install(step.image);
+		},
+		removeHostExtension: async (step) => {
+			hostExt.remove(step.image);
 		},
 	};
 

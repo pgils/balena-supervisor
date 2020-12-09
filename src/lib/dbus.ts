@@ -70,6 +70,15 @@ async function stopUnit(unitName: string) {
 	}
 }
 
+export async function spawnTransientService(name: string, command: string) {
+	const systemd = await getSystemdInterface();
+	try {
+		systemd.StartTransientUnit(name, 'replace');
+	} catch (e) {
+		throw new DbusError(e);
+	}
+}
+
 export async function stopService(serviceName: string) {
 	return stopUnit(`${serviceName}.service`);
 }

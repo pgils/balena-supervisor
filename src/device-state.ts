@@ -389,7 +389,10 @@ export async function loadInitialState() {
 	});
 
 	const targetApps = await applicationManager.getTargetApps();
-	if (!conf.provisioned || (_.isEmpty(targetApps) && !conf.targetStateSet)) {
+	if (
+		!conf.provisioned ||
+		true /*(_.isEmpty(targetApps) && !conf.targetStateSet)*/
+	) {
 		try {
 			await loadTargetFromFile(null);
 		} finally {

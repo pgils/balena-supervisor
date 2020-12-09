@@ -200,7 +200,8 @@ export async function triggerFetch(
 
 export async function remove(image: Image): Promise<void> {
 	try {
-		await removeImageIfNotNeeded(image);
+		console.log('Trying to remove: ', image);
+		// await removeImageIfNotNeeded(image);
 	} catch (e) {
 		logger.logSystemEvent(LogTypes.deleteImageError, {
 			image,
