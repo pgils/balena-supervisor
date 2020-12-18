@@ -4,8 +4,13 @@ import { Promise } from 'bluebird';
 import * as _ from 'lodash';
 
 import { expect } from './lib/chai-config';
+import { sleep } from './lib/helpers';
 import * as TargetState from '../src/device-state/target-state';
+import Log from '../src/lib/supervisor-console';
 import * as request from '../src/lib/request';
+import * as deviceState from '../src/device-state';
+import * as deviceConfig from '../src/device-config';
+import { UpdatesLockedError } from '../src/lib/errors';
 
 const stateEndpointBody = {
 	local: {
@@ -26,23 +31,30 @@ const stateEndpointBody = {
 	},
 };
 
+const req = {
+	getAsync: () =>
+		Promise.resolve([
+			{
+				statusCode: 200,
+				headers: {},
+			} as any,
+			JSON.stringify(stateEndpointBody),
+		]),
+};
+
 describe('Target state', () => {
+	beforeEach(() => {
+		spy(req, 'getAsync');
+		stub(request, 'getRequestInstance').resolves(req as any);
+	});
+
+	afterEach(() => {
+		(req.getAsync as SinonSpy).restore();
+		(request.getRequestInstance as SinonStub).restore();
+	});
+
 	describe('update', () => {
 		it('should emit target state when a new one is available', async () => {
-			const req = {
-				getAsync: () =>
-					Promise.resolve([
-						{
-							statusCode: 200,
-							headers: {},
-						} as any,
-						JSON.stringify(stateEndpointBody),
-					]),
-			};
-
-			spy(req, 'getAsync');
-			stub(request, 'getRequestInstance').resolves(req as any);
-
 			// Setup target state listener
 			const listener = stub();
 			TargetState.emitter.on('target-state-update', listener);
@@ -89,24 +101,9 @@ describe('Target state', () => {
 
 			// Cleanup
 			TargetState.emitter.off('target-state-update', listener);
-			(request.getRequestInstance as SinonStub).restore();
 		});
 
 		it('should emit cached target state if there was no listener for the cached state', async () => {
-			const req = {
-				getAsync: () =>
-					Promise.resolve([
-						{
-							statusCode: 200,
-							headers: {},
-						} as any,
-						JSON.stringify(stateEndpointBody),
-					]),
-			};
-
-			spy(req, 'getAsync');
-			stub(request, 'getRequestInstance').resolves(req as any);
-
 			// Perform target state request
 			await TargetState.update();
 
@@ -150,27 +147,56 @@ describe('Target state', () => {
 
 			// Cleanup
 			TargetState.emitter.off('target-state-update', listener);
-			(request.getRequestInstance as SinonStub).restore();
+		});
+
+		it('should cancel any target state applying if request is from API', async () => {
+			const logInfoSpy = spy(Log, 'info');
+
+			// This just makes the first step of the applyTarget function throw an error
+			// We could have stubbed any function to throw this error as long as it is inside the try block
+			stub(deviceConfig, 'getRequiredSteps').throws(
+				new UpdatesLockedError('Updates locked'),
+			);
+
+			// This value starts off as undefined so we must set something for the poll interval used here
+			// @ts-expect-error Assigning to a RO property
+			deviceState.maxPollTime = 60000;
+
+			// Rather then stubbing more values to make the following code execute
+			// I am just going to make the function I want run
+			const listener = async (
+				_targetState: any,
+				force: boolean,
+				isFromApi: boolean,
+			) => {
+				deviceState.triggerApplyTarget({ force, isFromApi });
+			};
+			// Add the function we want to run to this listener which calls it normally
+			TargetState.emitter.on('target-state-update', listener);
+
+			// Trigger an update which will start delay due to lock exception
+			await TargetState.update(false, false);
+
+			// Wait for interval to tick a few times
+			await sleep(2000); // 2 seconds
+
+			// Trigger another update but say it's from the API
+			await TargetState.update(false, true);
+
+			// Check for log message stating cancellation
+			expect(logInfoSpy.lastCall?.lastArg).to.equal(
+				'Skipping applyTarget because of a cancellation',
+			);
+
+			// Restore stubs
+			logInfoSpy.restore();
+			(deviceConfig.getRequiredSteps as SinonStub).restore();
+			TargetState.emitter.off('target-state-update', listener);
 		});
 	});
 
 	describe('get', () => {
 		it('returns the latest target state endpoint response', async () => {
-			const req = {
-				getAsync: () =>
-					Promise.resolve([
-						{
-							statusCode: 200,
-							headers: {},
-						} as any,
-						JSON.stringify(stateEndpointBody),
-					]),
-			};
-
-			// Setup spies and stubs
-			spy(req, 'getAsync');
-			stub(request, 'getRequestInstance').resolves(req as any);
-
 			// Perform target state request
 			const response = await TargetState.get();
 
@@ -180,26 +206,9 @@ describe('Target state', () => {
 
 			// Cached value should reflect latest response
 			expect(response).to.be.equal(JSON.stringify(stateEndpointBody));
-
-			// Cleanup
-			(request.getRequestInstance as SinonStub).restore();
 		});
 
 		it('returns the last cached target state', async () => {
-			const req = {
-				getAsync: () =>
-					Promise.resolve([
-						{
-							statusCode: 200,
-							headers: {},
-						} as any,
-						JSON.stringify(stateEndpointBody),
-					]),
-			};
-
-			// Setup spies and stubs
-			stub(request, 'getRequestInstance').resolves(req as any);
-
 			// Perform target state request, this should
 			// put the query result in the cache
 			await TargetState.update();
@@ -227,9 +236,6 @@ describe('Target state', () => {
 
 			// Cached value should reflect latest response
 			expect(response).to.be.equal(JSON.stringify(stateEndpointBody));
-
-			// Cleanup
-			(request.getRequestInstance as SinonStub).restore();
 		});
 	});
 });

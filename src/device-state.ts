@@ -224,7 +224,8 @@ type DeviceStateStep<T extends PossibleStepTargets> =
 let currentVolatile: DeviceReportFields = {};
 const writeLock = updateLock.writeLock;
 const readLock = updateLock.readLock;
-let maxPollTime: number;
+// Exported for tests
+export let maxPollTime: number;
 let intermediateTarget: InstancedDeviceState | null = null;
 let applyBlocker: Nullable<Promise<void>>;
 let cancelDelay: null | (() => void) = null;
