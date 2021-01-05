@@ -1,4 +1,205 @@
 - commits:
+    - subject: Support app uuids and types coming from the target state
+      hash: d4abc9c2a8c0d47c59f3b4c3cbd750a21d61fb7f
+      body: |
+        We store the uuid on the individual docker components so that when
+        building a current state, we can match them with the target state.
+      footer:
+        Change-type: minor
+        change-type: minor
+        Signed-off-by: Cameron Diver <cameron@balena.io>
+        signed-off-by: Cameron Diver <cameron@balena.io>
+      author: Cameron Diver
+      nested: []
+  version: 12.3.0
+  date: 2021-01-05T14:57:51.373Z
+- commits:
+    - subject: Bump systeminformation from 4.30.5 to 4.31.1
+      hash: 7ccbde985ee72296b189ba338bfa7ff49c3e6866
+      body: >
+        Bumps
+        [systeminformation](https://github.com/sebhildebrandt/systeminformation)
+        from 4.30.5 to 4.31.1.
+
+        - [Release
+        notes](https://github.com/sebhildebrandt/systeminformation/releases)
+
+        -
+        [Changelog](https://github.com/sebhildebrandt/systeminformation/blob/master/CHANGELOG.md)
+
+        - [Commits](https://github.com/sebhildebrandt/systeminformation/commits)
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: 'dependabot[bot] <support@github.com>'
+        signed-off-by: 'dependabot[bot] <support@github.com>'
+      author: 'dependabot[bot]'
+      nested: []
+  version: 12.2.16
+  date: 2020-12-21T19:07:54.345Z
+- commits:
+    - subject: Retired CameronDiver from CODEOWNERS
+      hash: 98fa7509030edae46b8d46487be578f2e8c28542
+      body: ''
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Miguel Casqueira <miguel@balena.io>
+        signed-off-by: Miguel Casqueira <miguel@balena.io>
+      author: Miguel Casqueira
+      nested: []
+  version: 12.2.15
+  date: 2020-12-21T17:57:16.342Z
+- commits:
+    - subject: Revert "Add dependabot configuration"
+      hash: 8767f145b228203c409d3972247f5a197c6a8e93
+      body: >
+        This reverts commit 153655b523af94d8192f0e0eb5574c67fbf85008.
+
+
+        Dependabot does not allow to limit version updates to just patches or
+        security
+
+        updates. Adding this configuration results in excess noise from
+
+        major and minor versions. We are reverting this change for the moment
+
+        and look for another version managment tool.
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Felipe Lalanne <felipe@balena.io>
+        signed-off-by: Felipe Lalanne <felipe@balena.io>
+      author: Felipe Lalanne
+      nested: []
+  version: 12.2.14
+  date: 2020-12-16T18:31:21.038Z
+- commits:
+    - subject: Add dependabot configuration
+      hash: 153655b523af94d8192f0e0eb5574c67fbf85008
+      body: ''
+      footer:
+        Closes: '#1508'
+        closes: '#1508'
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Miguel Casqueira <miguel@balena.io>
+        signed-off-by: Miguel Casqueira <miguel@balena.io>
+      author: Miguel Casqueira
+      nested: []
+  version: 12.2.13
+  date: 2020-12-16T00:10:43.103Z
+- commits:
+    - subject: Bump ini from 1.3.5 to 1.3.8
+      hash: b319c678ce3793d86ebe506867b34e54f227456a
+      body: |
+        Bumps [ini](https://github.com/isaacs/ini) from 1.3.5 to 1.3.8.
+        - [Release notes](https://github.com/isaacs/ini/releases)
+        - [Commits](https://github.com/isaacs/ini/compare/v1.3.5...v1.3.8)
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: 'dependabot[bot] <support@github.com>'
+        signed-off-by: 'dependabot[bot] <support@github.com>'
+      author: 'dependabot[bot]'
+      nested: []
+  version: 12.2.12
+  date: 2020-12-14T22:11:33.228Z
+- commits:
+    - subject: Improve supervisor API behavior when locks are set
+      hash: 4cdf26f82fd25284f7a7496fc2d91232c64a3e2e
+      body: >
+        This PR adds the following
+
+
+        * Supervisor v1 API application actions now return HTTP status code 423
+        when locks
+          are preventing the action to be performed. Previously this resulted in a
+          503 error
+        * Supervisor API v2 service actions now returns HTTP status code 423
+        when locks are
+          preventing the action to be performed. Previously, this resulted in an
+          exception logged by the supervisor and the API query timing out
+        * Supervisor API `/v2/applications/:appId/start-service` now does not
+          check for a lock. Lock handling in v2 actions is now performed by each
+          step executor
+        * `/v1/apps/:appId/start` now queries the target state and uses that
+          information to execute the start step (as v2 does). Previously start
+          resulted in `cannot get appId from undefined`
+        * Extra tests for API methods
+      footer:
+        Change-type: patch
+        change-type: patch
+        Connects-to: '#1523'
+        connects-to: '#1523'
+        Signed-off-by: Felipe Lalanne <felipe@balena.io>
+        signed-off-by: Felipe Lalanne <felipe@balena.io>
+      author: Felipe Lalanne
+      nested: []
+  version: 12.2.11
+  date: 2020-12-14T13:50:07.081Z
+- commits:
+    - subject: Add config.txt support for Alliance rpi3
+      hash: a8c4a6683ad07ac4d0f1f9aee28761cf2a846bdb
+      body: ''
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Felipe Lalanne <felipe@balena.io>
+        signed-off-by: Felipe Lalanne <felipe@balena.io>
+      author: Felipe Lalanne
+      nested: []
+  version: 12.2.10
+  date: 2020-12-11T12:54:34.175Z
+- commits:
+    - subject: Add config.txt support for Rocktech rpi
+      hash: 2c1fb7110e1f025e511d22c08f58fdaef313851d
+      body: ''
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Cameron Diver <cameron@balena.io>
+        signed-off-by: Cameron Diver <cameron@balena.io>
+      author: Cameron Diver
+      nested: []
+  version: 12.2.9
+  date: 2020-12-10T11:16:16.619Z
+- commits:
+    - subject: Patched /v1/restart exception
+      hash: 8b37df492b7e418890f5c7a8ec2d7ec08cc9d142
+      body: ''
+      footer:
+        Change-type: patch
+        change-type: patch
+        Closes: '#1509'
+        closes: '#1509'
+        Signed-off-by: Miguel Casqueira <miguel@balena.io>
+        signed-off-by: Miguel Casqueira <miguel@balena.io>
+      author: Miguel Casqueira
+      nested: []
+    - subject: Added test case for /v1/restart API
+      hash: 7a4473f65bd0c556935ab005f33a158b608ecc96
+      body: ''
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Miguel Casqueira <miguel@balena.io>
+        signed-off-by: Miguel Casqueira <miguel@balena.io>
+      author: Miguel Casqueira
+      nested: []
+    - subject: Consolidated Supervisor API tests into clearer files
+      hash: 733a2c5dc068f01e803505822e03d09c59a2a3b8
+      body: ''
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Miguel Casqueira <miguel@balena.io>
+        signed-off-by: Miguel Casqueira <miguel@balena.io>
+      author: Miguel Casqueira
+      nested: []
+  version: 12.2.8
+  date: 2020-11-30T20:45:21.952Z
+- commits:
     - subject: Bump systeminformation from 4.27.11 to 4.30.5
       hash: 8036d5147950a3dfb976aaceee46a75e0025c732
       body: >
