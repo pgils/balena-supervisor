@@ -127,6 +127,13 @@ export const update = async (
 			);
 		}
 
+		// If this update request came from the API reset emitted to cancel
+		// any processes that may be already applying the cached target release
+		// such as the back off timeout for when update locks are detected
+		if (isFromApi) {
+			cache.emitted = false;
+		}
+
 		const endpoint = url.resolve(apiEndpoint, `/device/v2/${uuid}/state`);
 		const request = await getRequestInstance();
 

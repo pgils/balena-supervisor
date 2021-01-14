@@ -46,7 +46,8 @@ interface DeviceTag {
 	value: string;
 }
 
-let readyForUpdates = false;
+// Export for testing
+export let readyForUpdates = false;
 
 export async function healthcheck() {
 	const {

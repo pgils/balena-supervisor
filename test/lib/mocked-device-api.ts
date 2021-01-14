@@ -176,8 +176,8 @@ async function initConfig(): Promise<void> {
 }
 
 function buildRoutes(): Router {
-	// Create new Router
-	const router = Router();
+	// Add to existing apiBinder router (it contains additional middleware and endpoints)
+	const router = apiBinder.router;
 	// Add V1 routes
 	createV1Api(applicationManager.router);
 	// Add V2 routes
