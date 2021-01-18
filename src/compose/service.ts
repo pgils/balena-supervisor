@@ -87,6 +87,7 @@ export class Service {
 		'networks',
 		'running',
 		'containerId',
+		'deviceRequests',
 		// This field is passed at container creation, but is not
 		// reported on a container inspect, so we cannot use it
 		// to compare containers
